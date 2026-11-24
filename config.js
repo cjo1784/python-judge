@@ -3,7 +3,7 @@ window.CONFIG = {
   // GAS 웹앱 주소 (데이터만 주고받는 창구)
   API: 'https://script.google.com/macros/s/AKfycbzNvF5hHYfXegV5JDoZ-6olpJ7jsq_-vdl3CpV9du37Ck9lZek7IfAgqbhpK9osxZQBJA/exec',
   // Google Cloud에서 만든 OAuth 클라이언트 ID (비밀 값 아님). 비어 있으면 로그인 버튼 대신 손님 모드만 보인다.
-  CLIENT_ID: '',
+  CLIENT_ID: '212100452716-24pn94mpo3r5ce0nuvc0163f1e032e8i.apps.googleusercontent.com',
   // 이 학교 계정만 로그인할 수 있다 (서버에서도 다시 확인)
   DOMAIN: 'wonju-g.gwe.hs.kr',
 };
