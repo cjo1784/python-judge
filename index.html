@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<style>
+  :root {
+    --bg: #f5f6fa; --surface: #fff; --ink: #111827; --ink2: #374151; --muted: #6b7280; --line: #e5e7eb;
+    --brand: #4f46e5; --brand-dark: #4338ca; --brand-soft: #eef2ff;
+    --ok: #047857; --ok-soft: #ecfdf5; --ok-line: #a7f3d0;
+    --warn: #b45309; --warn-soft: #fffbeb; --warn-line: #fde68a;
+    --bad: #b91c1c; --bad-soft: #fef2f2; --bad-line: #fecaca;
+    --info-soft: #eff6ff; --info-line: #bfdbfe;
+    --radius: 12px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+    --mono: Consolas, 'D2Coding', 'SF Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Pretendard, 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.55; }
+  h1, h2, h3, h4 { margin: 0; line-height: 1.3; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  /* 상단 바 */
+  .top { position: sticky; top: 0; z-index: 10; background: var(--surface); border-bottom: 1px solid var(--line);
+    height: 56px; padding: 0 24px; display: flex; align-items: center; gap: 14px; }
+  .logo { font-weight: 800; font-size: 17px; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px;
+    background: none; border: 0; padding: 0; color: var(--ink); }
+  .logo span { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--brand); color: #fff; font-size: 15px; }
+  .top .grow { flex: 1; }
+  .pill { font-size: 12.5px; padding: 3px 10px; border-radius: 99px; background: #f3f4f6; color: var(--ink2); white-space: nowrap; }
+  .pill.live::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; margin-right: 6px; }
+  .pill.live.on::before { background: #10b981; }
+  .pill.live.err::before { background: #ef4444; }
+  a.link { color: var(--brand); text-decoration: none; font-size: 13.5px; font-weight: 600; }
+  a.link:hover { text-decoration: underline; }
+
+  main { max-width: 1320px; margin: 0 auto; padding: 24px 24px 80px; }
+
+  /* 버튼 */
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 14px; transition: background .12s, border-color .12s; }
+  .btn:hover { background: #f9fafb; border-color: #d1d5db; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.primary:hover { background: var(--brand-dark); }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--ink2); }
+  .btn.ghost:hover { background: #f3f4f6; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 13px; border-radius: 7px; }
+  kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border: 1px solid rgba(255,255,255,.4); border-radius: 4px; opacity: .85; }
+  .btn:not(.primary) kbd { border-color: var(--line); color: var(--muted); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 6px; background: var(--brand-soft); color: var(--brand-dark); }
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 99px; }
+  .chip.ok, .chip.상 { background: var(--ok-soft); color: var(--ok); }
+  .chip.try, .chip.중 { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad, .chip.하 { background: var(--bad-soft); color: var(--bad); }
+  .notice { background: var(--warn-soft); border: 1px solid var(--warn-line); color: #78350f; border-radius: 9px; padding: 10px 14px; margin: 10px 0; font-size: 14px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #c7d2fe; border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: -3px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .center { display: grid; place-items: center; min-height: 50vh; color: var(--muted); gap: 10px; text-align: center; }
+
+  /* 승인 화면 */
+  .gate { max-width: 440px; margin: 8vh auto 0; padding: 36px 32px; text-align: center; }
+  .gate .icon { width: 56px; height: 56px; border-radius: 16px; display: inline-grid; place-items: center; font-size: 28px; background: var(--brand-soft); margin-bottom: 16px; }
+  .gate h2 { font-size: 21px; margin-bottom: 8px; }
+  .gate p { color: var(--ink2); margin: 0 0 20px; }
+  .gate input { width: 100%; height: 46px; font: inherit; font-size: 18px; text-align: center; letter-spacing: .08em;
+    border: 1px solid #d1d5db; border-radius: 10px; margin-bottom: 12px; }
+  .gate .btn { width: 100%; justify-content: center; height: 44px; }
+  .gate .err { color: var(--bad); font-size: 13.5px; min-height: 20px; margin-top: 8px; }
+
+  /* 로그인 화면 */
+  .login { max-width: 940px; margin: 6vh auto 0; display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 48px; align-items: center; }
+  .intro .biglogo { width: 64px; height: 64px; border-radius: 18px; background: var(--brand); display: grid; place-items: center; font-size: 34px; margin-bottom: 18px; }
+  .intro h1 { font-size: 34px; letter-spacing: -.02em; margin-bottom: 10px; }
+  .intro p { font-size: 17px; color: var(--ink2); margin: 0 0 22px; }
+  .intro ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; color: var(--ink2); }
+  .intro li { padding-left: 26px; position: relative; }
+  .intro li::before { content: '✓'; position: absolute; left: 0; color: var(--brand); font-weight: 800; }
+  .intro li b { color: var(--ink); margin-right: 6px; }
+  .signin { padding: 36px 30px; display: grid; gap: 14px; }
+  .signin h2 { font-size: 21px; }
+  .signin p { margin: 0; }
+  .btn.wide { width: 100%; justify-content: center; height: 46px; font-size: 15px; text-decoration: none; }
+  .signin .link { text-align: center; }
+  .signin .fine { margin: -4px 0 0; font-size: 12.5px; }
+  .gbtn { min-height: 44px; display: flex; justify-content: center; }
+  .signin .err { color: var(--bad); font-size: 13.5px; text-align: center; min-height: 0; }
+  .linkbtn { border: 0; background: none; padding: 0; color: var(--brand); font: inherit; font-weight: 600; cursor: pointer; }
+  .linkbtn:hover { text-decoration: underline; }
+  @media (max-width: 860px) { .login { grid-template-columns: minmax(0, 1fr); gap: 24px; margin-top: 2vh; } }
+
+  /* 손님 안내, 코딩 스타일 */
+  .guestbar { background: var(--info-soft); border: 1px solid var(--info-line); border-radius: 10px; padding: 10px 16px; margin-bottom: 14px; font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .stylecard { padding: 16px 20px; margin-bottom: 20px; }
+  .sc-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sc-sum { font-size: 17px; font-weight: 700; margin: 10px 0 4px; color: var(--brand-dark); }
+  .sc-more summary { cursor: pointer; color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+  .waiting { display: flex; align-items: center; gap: 8px; color: var(--ink2); background: #f8f9fb; border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12.5px; }
+  .or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+  /* 문제 목록 */
+  .hero { padding: 20px 24px; display: flex; align-items: center; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+  .hero h2 { font-size: 20px; }
+  .hero .bar { flex: 1; min-width: 220px; }
+  .progress { height: 10px; background: #e5e7eb; border-radius: 99px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: linear-gradient(90deg, #6366f1, #4f46e5); border-radius: 99px; transition: width .4s; }
+  .hero .num { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  .hero .num small { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; align-items: start; }
+  .side { position: sticky; top: 76px; padding: 8px; }
+  .unit { width: 100%; text-align: left; border: 0; background: none; border-radius: 8px; padding: 9px 12px; color: var(--ink2); display: block; }
+  .unit:hover { background: #f3f4f6; }
+  .unit.on { background: var(--brand-soft); color: var(--brand-dark); font-weight: 700; }
+  .unit .row1 { display: flex; justify-content: space-between; font-size: 14px; }
+  .unit .row1 span { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .unit .progress { height: 4px; margin-top: 6px; }
+  .tools { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .search { flex: 1; min-width: 180px; height: 38px; border: 1px solid var(--line); border-radius: 9px; padding: 0 12px; font: inherit; background: var(--surface); }
+  .seg { display: inline-flex; background: #eceef3; border-radius: 9px; padding: 3px; }
+  .seg button { border: 0; background: none; padding: 5px 12px; border-radius: 7px; font-size: 13.5px; color: var(--ink2); font-weight: 600; }
+  .seg button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+  .plist { overflow: hidden; }
+  .prow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 96px 96px; align-items: center; gap: 8px; width: 100%;
+    padding: 12px 18px; border: 0; border-bottom: 1px solid #f0f1f4; background: none; text-align: left; color: var(--ink); }
+  .prow:last-child { border-bottom: 0; }
+  .prow:hover { background: #fafaff; }
+  .prow .no { font-family: var(--mono); color: var(--muted); font-size: 13.5px; }
+  .prow .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prow .st { text-align: right; }
+  .empty { padding: 48px; text-align: center; color: var(--muted); }
+
+  /* 문제 풀이 */
+  .crumb { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .crumb h2 { font-size: 19px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crumb .no { font-family: var(--mono); color: var(--muted); font-weight: 500; margin-right: 6px; }
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; align-items: start; }
+  .pad { padding: 20px 22px; }
+  .sec { font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin: 20px 0 8px; display: flex; align-items: center; justify-content: space-between; }
+  .sec:first-child { margin-top: 0; }
+  .pre { white-space: pre-wrap; word-break: break-word; }
+  pre.box { font-family: var(--mono); font-size: 13.5px; background: #f8f9fb; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; margin: 4px 0 0; white-space: pre-wrap; word-break: break-word; min-height: 38px; line-height: 1.5; }
+  .ex { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .ex .lab { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--muted); }
+  .rubric { margin: 0; padding-left: 18px; color: var(--ink2); }
+  .rubric li { margin: 4px 0; }
+  .edhead { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .edhead b { font-family: var(--mono); color: var(--ink2); font-weight: 600; }
+  .CodeMirror { height: 340px; font-family: var(--mono); font-size: 15px; line-height: 1.55; }
+  .CodeMirror-gutters { background: #fafafa; border-right: 1px solid var(--line); }
+  .actions { display: flex; gap: 8px; align-items: center; padding: 12px 14px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .actions .status { font-size: 13.5px; color: var(--ink2); margin-left: 4px; }
+  .io { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--line); }
+  .io > div { padding: 12px 14px; min-width: 0; }
+  .io > div + div { border-left: 1px solid var(--line); }
+  .io label { font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; display: block; margin-bottom: 6px; }
+  .io textarea { width: 100%; height: 110px; font-family: var(--mono); font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; background: #fff; }
+  .io pre.box { margin: 0; height: 110px; overflow: auto; }
+  .io pre.box.error { background: var(--bad-soft); border-color: var(--bad-line); color: #7f1d1d; }
+
+  /* 결과 */
+  #result { margin-top: 20px; }
+  .verdict { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: var(--radius) var(--radius) 0 0; }
+  .verdict.ok { background: var(--ok-soft); color: var(--ok); }
+  .verdict.bad { background: var(--bad-soft); color: var(--bad); }
+  .verdict b { font-size: 17px; }
+  .tests { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 20px 4px; }
+  .tcase { font-size: 13px; padding: 5px 11px; border-radius: 8px; border: 1px solid; font-weight: 600; }
+  .tcase.ok { background: var(--ok-soft); border-color: var(--ok-line); color: var(--ok); }
+  .tcase.bad { background: var(--bad-soft); border-color: var(--bad-line); color: var(--bad); }
+  .fails { padding: 8px 20px 0; }
+  .fail { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+  .fail .ex { grid-template-columns: 1fr 1fr 1fr; margin: 6px 0 0; }
+  .fb { padding: 4px 20px 20px; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .fcard { border-radius: 10px; padding: 14px 16px; border: 1px solid; }
+  .fcard h4 { font-size: 14.5px; margin-bottom: 8px; }
+  .fcard ul { margin: 0; padding-left: 18px; }
+  .fcard li { margin: 5px 0; }
+  .fcard.good { background: var(--ok-soft); border-color: var(--ok-line); }
+  .fcard.lack { background: var(--bad-soft); border-color: var(--bad-line); }
+  .fcard.more { background: var(--info-soft); border-color: var(--info-line); }
+  table.crit { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.crit th, table.crit td { text-align: left; padding: 9px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+  table.crit th { font-size: 12.5px; color: var(--muted); border-top: 0; }
+  .steps { display: flex; gap: 8px; align-items: center; padding: 18px 20px; color: var(--muted); font-size: 14px; flex-wrap: wrap; }
+  .steps span.on { color: var(--brand-dark); font-weight: 700; }
+  .steps span.done { color: var(--ok); }
+  details.hist { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 8px 0; }
+  details.hist summary { cursor: pointer; padding: 11px 16px; display: flex; gap: 10px; align-items: center; font-size: 14px; }
+  details.hist .inner { padding: 0 16px 16px; }
+
+  @media (max-width: 960px) {
+    .layout, .split, .cards { grid-template-columns: minmax(0, 1fr); }
+    .side { position: static; display: flex; flex-wrap: wrap; gap: 4px; }
+    .unit { width: auto; } .unit .progress { display: none; }
+    .fail .ex { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="logo" id="home" aria-label="문제 목록으로"><span>🐍</span>파이썬 저지</button>
+  <div class="grow"></div>
+  <a class="link" id="adminLink" href="admin.html" hidden>관리자 페이지 →</a>
+  <button class="btn ghost sm" id="loginLink" hidden>로그인</button>
+  <span class="pill" id="who" hidden></span>
+  <span class="pill live" id="pystate" role="status">파이썬 준비 중</span>
+  <button class="btn ghost sm" id="logoutBtn" hidden>로그아웃</button>
+</header>
+<main id="main"><div class="center"><span class="spinner"></span>불러오는 중...</div></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="https://accounts.google.com/gsi/client" async onload="gisLoaded()"></script>
+<script>
+// ---------- 공통 ----------
+let GUEST = false; // 손님 모드: 아무것도 서버에 저장되지 않는다
+// 작성 중인 코드 등은 이 컴퓨터에 둔다. 손님은 창을 닫으면 사라지게 sessionStorage를 쓴다.
+const store = {
+  box() { return GUEST ? sessionStorage : localStorage; },
+  get(k) { try { return this.box().getItem(k) || ''; } catch (e) { return ''; } },
+  set(k, v) { try { this.box().setItem(k, v); } catch (e) {} },
+};
+const TIME_LIMIT = 3000;
+const loading = text => `<div class="center"><div><span class="spinner"></span> ${esc(text)}</div></div>`;
+
+// ---------- 파이썬 실행 (Pyodide, Web Worker) ----------
+const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+const WORKER_SRC = `
+importScripts('${PYODIDE}pyodide.js');
+const ready = loadPyodide({ indexURL: '${PYODIDE}' });
+ready.then(() => postMessage({ ready: true }));
+onmessage = async ({ data }) => {
+  const py = await ready;
+  const lines = data.stdin === '' ? [] : data.stdin.split('\\n');
+  let out = '';
+  const add = s => { if (out.length < 50000) out += s + '\\n'; };
+  py.setStdin({ stdin: () => lines.length ? lines.shift() : null });
+  py.setStdout({ batched: add });
+  py.setStderr({ batched: add });
+  postMessage({ started: true });
+  try {
+    // 매번 새 이름공간에서 실행해 이전 실행의 변수가 남지 않게 한다.
+    const ns = py.globals.get('dict')();
+    await py.runPythonAsync(data.code, { globals: ns });
+    ns.destroy();
+    postMessage({ done: true, out, error: null });
+  } catch (e) {
+    postMessage({ done: true, out, error: String(e.message || e) });
+  }
+};`;
+let worker, workerReady;
+function pyState(text, cls) { $('pystate').textContent = text; $('pystate').className = 'pill live ' + (cls || ''); }
+function startWorker() {
+  worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
+  pyState('파이썬 준비 중');
+  workerReady = new Promise((ok, fail) => {
+    worker.addEventListener('message', e => { if (e.data.ready) { pyState('파이썬 준비 완료', 'on'); ok(); } });
+    worker.addEventListener('error', e => { pyState('파이썬 불러오기 실패', 'err'); fail(e); });
+  });
+  workerReady.catch(() => {});
+}
+// 결과: { out, error, timeout }. 제한 시간은 파이썬 로딩이 끝나고 코드가 시작된 뒤부터 잰다.
+async function runPython(code, stdin) {
+  if (!worker) startWorker();
+  try { await workerReady; } catch (e) { worker = null; return { out: '', error: '파이썬을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.', timeout: false }; }
+  return new Promise(resolve => {
+    let timer;
+    const w = worker;
+    const onMsg = e => {
+      if (e.data.started) {
+        timer = setTimeout(() => {
+          w.terminate(); startWorker(); // 무한 반복은 Worker를 통째로 끝내고 새로 띄운다
+          resolve({ out: '', error: null, timeout: true });
+        }, TIME_LIMIT);
+      } else if (e.data.done) {
+        clearTimeout(timer); w.removeEventListener('message', onMsg);
+        resolve({ out: e.data.out, error: e.data.error, timeout: false });
+      }
+    };
+    w.addEventListener('message', onMsg);
+    w.postMessage({ code, stdin: String(stdin || '').replace(/\r/g, '') });
+  });
+}
+// Pyodide 내부 경로는 빼고 학생 코드 부분부터 보여 준다.
+function niceError(msg) {
+  const lines = msg.trim().split('\n');
+  const i = lines.findIndex(l => l.includes('File "<exec>"'));
+  let text = (i >= 0 ? lines.slice(i) : lines.slice(-1)).join('\n').replace(/File "<exec>", /g, '');
+  if (/EOFError/.test(text)) text += '\n→ input()이 읽을 값이 부족해요. 입력 칸에 값을 한 줄에 하나씩 적었는지 확인해 보세요.';
+  return text;
+}
+const lastLine = msg => msg.trim().split('\n').pop();
+
+// ---------- 시작: 로그인과 승인 ----------
+let ME, STYLE = null, GUEST_LEFT = null, pollTimer;
+async function boot() {
+  clearTimeout(pollTimer);
+  $('main').innerHTML = loading('불러오는 중...');
+  let r;
+  try { r = await api('init'); }
+  catch (e) {
+    if (e.code === 'AUTH' || e.code === 'DOMAIN') return; // onAuthExpired가 로그인 화면을 보여 준다
+    $('main').innerHTML = `<div class="card gate"><div class="icon">⚠️</div><h2>접속할 수 없어요</h2><p>${errText(e)}</p>
+      <button class="btn primary" onclick="boot()">다시 시도</button></div>`;
+    return;
+  }
+  ME = r.me; STYLE = r.style || null; GUEST_LEFT = r.손님남은;
+  if (r.list) { LIST = r.list; listAt = Date.now(); }
+  Object.keys(r.problems || {}).forEach(id => { if (!SEEN[id]) SEEN[id] = { ...r.problems[id], history: null, 남은횟수: null }; });
+  if (ME.상태 === '교사' && session.in === '1' && !sessionStorage.getItem('stayStudent')) { location.href = 'admin.html'; return; }
+  session.in ? enter() : showLogin();
+}
+// 로그인했다가 토큰이 만료되면 로그인 화면으로 (작성 중인 코드는 이 컴퓨터에 남아 있다)
+onAuthExpired = e => { session.in = ''; showLogin(errText(e)); };
+onSignedIn = () => { $('loginErr') && ($('loginErr').textContent = ''); boot(); };
+
+function showLogin(error) {
+  clearTimeout(pollTimer);
+  GUEST = false; P = null;
+  ['who', 'adminLink', 'loginLink', 'logoutBtn'].forEach(id => { $(id).hidden = true; });
+  $('main').innerHTML = `<div class="login">
+    <section class="intro">
+      <div class="biglogo">🐍</div>
+      <h1>파이썬 저지</h1>
+      <p>브라우저에서 바로 풀고, 채점기준에 따라 AI 피드백을 받는 파이썬 연습장</p>
+      <ul>
+        <li><b>바로 실행</b> 설치 없이 코드를 실행하고 결과를 확인해요</li>
+        <li><b>자동 채점</b> 제출하면 공개·숨김 테스트로 채점해요</li>
+        <li><b>AI 피드백</b> 잘한 점, 부족한 점, 채우면 좋을 부분을 알려 줘요</li>
+        <li><b>코딩 스타일</b> 로그인하면 내 제출을 모아 코딩 습관을 분석해 줘요</li>
+      </ul>
+    </section>
+    <section class="card signin">
+      <h2>로그인</h2>
+      <p class="muted">학교 Google 계정(@${esc(CONFIG.DOMAIN)})으로 로그인하면 내 기록이 저장돼요.</p>
+      <div id="gbtn" class="gbtn"></div>
+      <div class="err" id="loginErr" role="alert">${error || ''}</div>
+      <div class="or"><span>또는</span></div>
+      <button class="btn wide" id="asGuest">로그인 없이 손님으로 풀기</button>
+      <p class="muted fine">손님은 문제를 풀고 채점받을 수 있지만, 제출 기록과 피드백이 저장되지 않아요.</p>
+    </section></div>`;
+  $('asGuest').onclick = () => { session.in = 'guest'; if (ME) startGuest(); else boot(); };
+  renderGoogleButton($('gbtn')).then(ok => {
+    if (!ok) $('gbtn').innerHTML = '<div class="notice">로그인 기능을 준비하고 있어요. 지금은 손님으로 풀 수 있어요.</div>';
+  });
+}
+function enter() {
+  const s = ME.상태;
+  if (s === '교사' || s === '승인') {
+    GUEST = false;
+    $('who').hidden = false;
+    $('who').textContent = s === '교사' ? '관리자' : '학번 ' + ME.학번;
+    $('loginLink').hidden = true;
+    $('logoutBtn').hidden = false;
+    $('adminLink').hidden = s !== '교사';
+    if (!worker) startWorker();
+    showList();
+  } else if (s === '손님' || session.in === 'guest') { // 로그인 안 함, 또는 승인 전 학생이 손님을 고름
+    startGuest();
+  } else {
+    showGate();
+  }
+}
+// 손님 모드: 로그인하지 않았거나, 승인 전인 학생이 먼저 풀어 볼 때
+function startGuest() {
+  if (ME.상태 === '차단') return showGate();
+  GUEST = true; session.in = 'guest';
+  $('who').hidden = false; $('who').textContent = '손님';
+  $('loginLink').hidden = ME.상태 !== '손님';
+  $('logoutBtn').hidden = ME.상태 === '손님'; // 승인 전 학생은 로그인 상태이므로 로그아웃 버튼
+  if (!worker) startWorker();
+  showList();
+}
+function showGate(error) {
+  const s = ME.상태;
+  $('logoutBtn').hidden = false; // 학교 계정으로 로그인한 상태
+  const guestBtn = '<button class="btn ghost" id="tryGuest" style="margin-top:8px">승인 전에 손님으로 풀어 보기</button>';
+  if (s === '차단') {
+    $('main').innerHTML = `<div class="card gate"><div class="icon">🚫</div><h2>이용이 제한되었어요</h2><p>선생님께 문의해 주세요.</p>
+      <button class="btn" onclick="logout()">다른 계정으로 로그인</button></div>`;
+    $('logoutBtn').hidden = false;
+    return;
+  } else if (s === '대기' && !error) {
+    $('main').innerHTML = `<div class="card gate"><div class="icon">⏳</div><h2>승인을 기다리고 있어요</h2>
+      <p>학번 <b>${esc(ME.학번)}</b>(으)로 신청했어요.<br>선생님이 승인하면 기록이 저장되기 시작해요.</p>
+      <button class="btn primary" id="recheck">승인됐는지 확인하기</button>
+      ${guestBtn}
+      <button class="btn ghost" id="edit" style="margin-top:4px">학번을 잘못 적었어요</button></div>`;
+    $('recheck').onclick = () => { $('recheck').disabled = true; boot(); };
+    $('edit').onclick = () => { ME.상태 = '미신청'; showGate(); };
+    pollTimer = setTimeout(boot, 20000); // 20초마다 승인 여부 확인
+  } else {
+    $('main').innerHTML = `<div class="card gate"><div class="icon">👋</div><h2>처음 오셨네요</h2>
+      <p>학번을 입력하고 선생님께 이용 승인을 요청하세요.<br><span class="muted">이름과 이메일은 저장하지 않아요.</span></p>
+      <form id="req"><input id="sid" inputmode="numeric" autocomplete="off" placeholder="학번 (예: 10312)" value="${esc(ME.학번)}" aria-label="학번">
+      <button class="btn primary" id="reqBtn">승인 요청하기</button></form>
+      ${guestBtn}
+      <div class="err" role="alert">${error || ''}</div></div>`;
+    $('sid').focus();
+    $('req').onsubmit = async ev => {
+      ev.preventDefault();
+      $('reqBtn').disabled = true;
+      try { ME = await api('requestAccess', $('sid').value); ME.상태 === '승인' ? boot() : showGate(); }
+      catch (e) { ME.학번 = $('sid').value; showGate(errText(e)); }
+    };
+  }
+  $('tryGuest').onclick = () => { clearTimeout(pollTimer); startGuest(); };
+}
+
+// ---------- 문제 목록 ----------
+let LIST = null, listAt = 0;
+const SEEN = {}; // 문제 내용 (첫 접속 때 미리 받아 둔다)
+const view = { unit: store.get('unit'), status: store.get('status'), q: '' };
+function shown() {
+  const q = view.q.trim().toLowerCase();
+  if (q) return (LIST || []).filter(p => (p.번호 + ' ' + p.제목).toLowerCase().includes(q)); // 검색은 모든 단원에서 찾는다
+  return (LIST || []).filter(p => (!view.unit || p.단원 === view.unit)
+    && (!view.status || (view.status === '안 푼 문제' ? !p.상태 : p.상태 === view.status)));
+}
+async function showList() {
+  P = null;
+  if (LIST) renderList(); else $('main').innerHTML = loading('문제 목록을 불러오는 중...');
+  if (LIST && Date.now() - listAt < 60000) return; // 방금 받은 목록은 다시 받지 않는다 (내 제출 결과는 화면에서 바로 반영함)
+  try { LIST = await api('getProblems'); listAt = Date.now(); if (!P) renderList(); }
+  catch (e) { if (!LIST) $('main').innerHTML = `<div class="notice">${errText(e)}</div>`; }
+}
+function renderList() {
+  const units = [...new Set(LIST.map(p => p.단원))];
+  if (view.unit && !units.includes(view.unit)) view.unit = '';
+  const done = LIST.filter(p => p.상태 === '통과').length;
+  const trying = LIST.filter(p => p.상태 === '도전 중').length;
+  const pct = n => LIST.length ? Math.round(n / LIST.length * 100) : 0;
+  const unitBtn = (name, items) => {
+    const d = items.filter(p => p.상태 === '통과').length;
+    return `<button class="unit ${view.unit === name ? 'on' : ''}" data-unit="${esc(name)}">
+      <div class="row1">${esc(name || '전체')}<span>${d}/${items.length}</span></div>
+      <div class="progress"><i style="width:${items.length ? d / items.length * 100 : 0}%"></i></div></button>`;
+  };
+  $('main').innerHTML = `
+    ${GUEST ? `<div class="guestbar">👀 <b>손님 모드</b>예요. 풀고 채점받을 수 있지만 제출 기록과 피드백은 저장되지 않아요.
+      ${ME.상태 === '손님' ? '<button class="linkbtn" data-login>Google 계정으로 로그인</button>' : '<span class="muted">선생님이 승인하면 기록이 저장돼요.</span>'}</div>` : ''}
+    <section class="card hero">
+      <div><div class="muted">${GUEST ? '이번 방문 진도' : '내 진도'}</div><div class="num">${done}<small> / ${LIST.length}문제 통과</small></div></div>
+      <div class="bar"><div class="progress" role="progressbar" aria-valuenow="${pct(done)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct(done)}%"></i></div>
+        <div class="muted" style="margin-top:6px">${pct(done)}% 완료${trying ? ` · 도전 중 ${trying}문제` : ''}</div></div>
+    </section>
+    <div id="style">${styleHtml()}</div>
+    <div class="layout">
+      <nav class="card side" aria-label="단원">${unitBtn('', LIST)}${units.map(u => unitBtn(u, LIST.filter(p => p.단원 === u))).join('')}</nav>
+      <section>
+        <div class="tools">
+          <input class="search" id="q" type="search" placeholder="문제 번호나 제목으로 찾기" value="${esc(view.q)}" aria-label="문제 검색">
+          <div class="seg" role="group" aria-label="풀이 상태">${['', '안 푼 문제', '도전 중', '통과'].map(s =>
+            `<button data-status="${s}" class="${view.status === s ? 'on' : ''}">${s || '전체'}</button>`).join('')}</div>
+        </div>
+        <div class="card plist" id="plist"></div>
+      </section>
+    </div>`;
+  document.querySelectorAll('.unit').forEach(b => b.onclick = () => { view.unit = b.dataset.unit; store.set('unit', view.unit); renderList(); });
+  document.querySelectorAll('.seg button').forEach(b => b.onclick = () => { view.status = b.dataset.status; store.set('status', view.status); renderList(); });
+  $('q').oninput = () => { view.q = $('q').value; renderRows(); };
+  bindStyle();
+  document.querySelectorAll('[data-login]').forEach(b => b.onclick = () => { session.in = ''; showLogin(); });
+  renderRows();
+}
+
+// ---------- 코딩 스타일 분석 ----------
+function styleHtml() {
+  if (GUEST) return `<section class="card stylecard"><div class="sc-head"><b>🧭 내 코딩 스타일</b></div>
+    <p class="muted" style="margin:6px 0 0">로그인한 학생은 제출이 ${5}번 이상 모이면 내 코딩 습관을 분석받을 수 있어요.</p></section>`;
+  if (!STYLE) return '';
+  const a = STYLE.최근 && STYLE.최근.분석;
+  const list = (cls, title, items) => `<div class="fcard ${cls}"><h4>${title}</h4>
+    ${items && items.length ? `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<span class="muted">없음</span>'}</div>`;
+  return `<section class="card stylecard">
+    <div class="sc-head"><b>🧭 내 코딩 스타일</b>
+      ${a ? `<span class="muted">${esc(STYLE.최근.시각)} 분석</span>` : ''}<span style="flex:1"></span>
+      <button class="btn sm ${a ? '' : 'primary'}" id="analyze" ${STYLE.가능 ? '' : 'disabled'}>${a ? '다시 분석하기' : '분석하기'}</button></div>
+    ${STYLE.가능 ? '' : `<div class="muted" style="margin-top:6px">${esc(STYLE.이유)}</div>`}
+    ${a ? `<div class="sc-sum">“${esc(a.한줄요약)}”</div>
+      <details class="sc-more"><summary>자세히 보기</summary>
+        <div class="cards">${list('good', '💪 강점', a.강점)}${list('more', '🔁 반복되는 습관', a.습관)}${list('lack', '🌱 성장 포인트', a.성장포인트)}</div>
+        ${a.추천단원 && a.추천단원.length ? `<div>추천 단원 ${a.추천단원.map(u => `<button class="btn sm gounit" data-unit="${esc(u)}">${esc(u)} 풀러 가기</button>`).join(' ')}</div>` : ''}
+      </details>`
+      : `<p class="muted" style="margin:6px 0 0">최근 제출을 모아 강점, 반복되는 습관, 성장 포인트를 알려 줘요. (하루 1번)</p>`}
+  </section>`;
+}
+function bindStyle() {
+  if ($('analyze')) $('analyze').onclick = async () => {
+    $('analyze').disabled = true;
+    $('analyze').innerHTML = '<span class="spinner"></span> 분석 중 (20~40초)';
+    try { STYLE = await api('analyzeStyle'); }
+    catch (e) { STYLE.가능 = false; STYLE.이유 = errText(e); }
+    if (!P && $('style')) { $('style').innerHTML = styleHtml(); bindStyle(); const d = document.querySelector('.sc-more'); if (d) d.open = true; }
+  };
+  document.querySelectorAll('.gounit').forEach(b => b.onclick = () => {
+    view.unit = b.dataset.unit; view.status = '안 푼 문제'; view.q = ''; renderList();
+    document.querySelector('.layout').scrollIntoView({ behavior: 'smooth' });
+  });
+}
+function renderRows() {
+  const rows = shown();
+  $('plist').innerHTML = rows.length ? rows.map(p => `<button class="prow" data-id="${esc(p.번호)}">
+      <span class="no">${esc(p.번호)}</span><span class="title">${esc(p.제목)}</span>
+      <span><span class="tag">${esc(p.단원)}</span></span>
+      <span class="st">${p.상태 === '통과' ? '<span class="chip ok">✓ 통과</span>' : p.상태 ? '<span class="chip try">도전 중</span>' : ''}</span>
+    </button>`).join('') : '<div class="empty">조건에 맞는 문제가 없어요.</div>';
+  document.querySelectorAll('.prow').forEach(b => b.onclick = () => showProblem(b.dataset.id));
+}
+
+// ---------- 문제 풀이 ----------
+let P, editor, busyNow = false;
+const draftKey = () => 'draft-' + P.번호;
+
+async function showProblem(id) {
+  window.scrollTo(0, 0);
+  if (!SEEN[id]) { // 미리 받아 둔 내용이 없을 때만 기다린다
+    $('main').innerHTML = loading('문제를 불러오는 중...');
+    try { SEEN[id] = await api('getProblem', id); }
+    catch (e) { $('main').innerHTML = `<div class="notice">${errText(e)}</div><button class="btn" onclick="showList()">← 문제 목록</button>`; return; }
+    renderProblem(SEEN[id]);
+    return;
+  }
+  // 문제는 바로 보여 주고, 제출 기록과 남은 횟수만 뒤에서 받는다.
+  const p = SEEN[id];
+  p.submitted = false;
+  if (GUEST) { p.history = []; p.남은횟수 = GUEST_LEFT; renderProblem(p); return; } // 손님은 기록이 없으니 바로
+  renderProblem(p);
+  api('getProblem', id).then(fresh => {
+    if (p.submitted) return; // 그사이 제출했다면 제출 결과가 더 새롭다
+    Object.assign(p, fresh);
+    if (P === p) { renderHistory(P.history); showQuota(); }
+  }).catch(() => { if (P === p && !P.history) { P.history = []; renderHistory(P.history); } });
+}
+function renderProblem(p) {
+  P = p;
+  const order = shown().map(x => x.번호);
+  const at = order.indexOf(P.번호);
+  const prev = at > 0 ? order[at - 1] : null, next = at >= 0 && at < order.length - 1 ? order[at + 1] : null;
+  const examples = P.tests.filter(t => t.공개);
+  const rubric = String(P.채점기준).split('\n').map(l => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+  $('main').innerHTML = `
+  <div class="crumb">
+    <button class="btn ghost sm" id="toList">← 목록</button>
+    <h2><span class="no">${esc(P.번호)}</span>${esc(P.제목)} <span class="tag">${esc(P.단원)}</span></h2>
+    <button class="btn sm" id="prev" ${prev ? '' : 'disabled'}>‹ 이전</button>
+    <button class="btn sm" id="next" ${next ? '' : 'disabled'}>다음 ›</button>
+  </div>
+  <div class="split">
+    <section class="card pad">
+      <div class="sec">문제</div>
+      <div class="pre">${esc(P.설명)}</div>
+      <div class="sec">입출력 예시</div>
+      ${examples.map((t, i) => `<div class="ex">
+        <div><div class="lab">입력 ${i + 1}<button class="btn ghost sm use" data-i="${i}" title="이 입력을 입력 칸에 넣어요">입력 칸에 넣기</button></div><pre class="box">${esc(t.입력) || '<span class="muted">(입력 없음)</span>'}</pre></div>
+        <div><div class="lab">출력 ${i + 1}<span style="height:30px"></span></div><pre class="box">${esc(t.출력)}</pre></div></div>`).join('')}
+      <div class="sec">채점기준 <span class="muted" style="font-weight:500;letter-spacing:0">AI 피드백이 이 기준으로 평가해요</span></div>
+      <ul class="rubric">${rubric.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+    </section>
+    <section class="card" style="overflow:hidden">
+      <div class="edhead"><b>main.py</b><span class="grow" style="flex:1"></span><span id="saved"></span></div>
+      <textarea id="code" aria-label="코드 편집기"></textarea>
+      <div class="actions">
+        <button class="btn" id="run">▶ 실행 <kbd>Ctrl+Enter</kbd></button>
+        <button class="btn primary" id="submit">제출하기</button>
+        <span class="status" id="status" role="status"></span>
+        <span style="flex:1"></span>
+        <span class="pill" id="quota"></span>
+      </div>
+      <div class="io">
+        <div><label for="stdin">입력 <span class="muted" style="font-weight:500;letter-spacing:0">input()이 읽을 값, 한 줄에 하나씩</span></label>
+          <textarea id="stdin" spellcheck="false" placeholder="예)&#10;3&#10;4"></textarea></div>
+        <div><label>실행 결과</label><pre class="box" id="out"><span class="muted">[실행]을 누르면 여기에 결과가 나와요.</span></pre></div>
+      </div>
+    </section>
+  </div>
+  <div id="result"></div>
+  <div class="sec" style="margin-top:28px">이전 제출 기록</div>
+  <div id="history"></div>`;
+  editor = CodeMirror.fromTextArea($('code'), {
+    mode: 'python', lineNumbers: true, indentUnit: 4, tabSize: 4, autofocus: true,
+    extraKeys: {
+      Tab: cm => cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    '),
+      'Ctrl-Enter': () => onRun(), 'Cmd-Enter': () => onRun(),
+    },
+  });
+  editor.setValue(store.get(draftKey()));
+  editor.on('change', () => { store.set(draftKey(), editor.getValue()); $('saved').textContent = GUEST ? '이 창을 닫으면 사라져요' : '이 컴퓨터에 임시 저장됨'; });
+  if (examples[0]) $('stdin').value = examples[0].입력;
+  $('toList').onclick = showList;
+  $('prev').onclick = () => showProblem(prev);
+  $('next').onclick = () => showProblem(next);
+  $('run').onclick = onRun;
+  $('submit').onclick = onSubmit;
+  document.querySelectorAll('.use').forEach(b => b.onclick = () => { $('stdin').value = examples[b.dataset.i].입력; $('stdin').focus(); });
+  renderHistory(P.history);
+  setBusy(false);
+}
+function setBusy(on, text) {
+  busyNow = on;
+  $('run').disabled = $('submit').disabled = on;
+  $('status').innerHTML = on ? `<span class="spinner"></span> ${esc(text || '')}` : '';
+  showQuota();
+}
+function showQuota() {
+  $('quota').textContent = P.남은횟수 == null ? 'AI 피드백 횟수 확인 중'
+    : GUEST ? `손님 전체 오늘 남은 AI 피드백 ${P.남은횟수}회` : `오늘 남은 AI 피드백 ${P.남은횟수}회`;
+}
+
+async function onRun() {
+  if (busyNow) return;
+  setBusy(true, '실행 중...');
+  const r = await runPython(editor.getValue(), $('stdin').value);
+  if (!P) return;
+  const failed = r.timeout || r.error;
+  $('out').className = 'box' + (failed ? ' error' : '');
+  $('out').textContent = r.timeout ? `시간 초과: ${TIME_LIMIT / 1000}초 안에 끝나지 않았어요.\n반복이 끝나는 조건을 확인해 보세요.`
+    : (r.out + (r.error ? niceError(r.error) : '')) || '(출력이 없어요. print()를 사용했는지 확인해 보세요.)';
+  setBusy(false);
+}
+
+const STEPS = ['테스트 실행', '채점'];
+function showSteps(now, detail) {
+  $('result').innerHTML = `<div class="card steps"><span class="spinner"></span>${STEPS.map((s, i) =>
+    `<span class="${i < now ? 'done' : i === now ? 'on' : ''}">${i < now ? '✓ ' : ''}${s}${i === now && detail ? ' ' + esc(detail) : ''}</span>`).join('<span>›</span>')}</div>`;
+}
+// 1단계: 브라우저에서 테스트 실행 → 서버 채점 결과를 바로 보여 준다.
+// 2단계: AI 피드백은 결과 아래에서 따로 기다린다 (10~40초).
+async function onSubmit() {
+  if (busyNow) return;
+  const code = editor.getValue(), id = P.번호;
+  if (!code.trim()) { $('status').textContent = '코드를 먼저 작성해 주세요.'; return; }
+  const outputs = [];
+  let timeouts = 0;
+  setBusy(true, '제출 중...');
+  for (let i = 0; i < P.tests.length; i++) {
+    showSteps(0, `(${i + 1}/${P.tests.length})`);
+    // ponytail: 시간 초과가 2번 나오면 남은 테스트도 시간 초과로 본다 (무한 반복 코드로 30초 넘게 기다리지 않게).
+    const r = timeouts >= 2 ? { out: '', error: null, timeout: true } : await runPython(code, P.tests[i].입력);
+    if (r.timeout) timeouts++;
+    outputs.push({ out: r.out, error: r.error ? lastLine(r.error) : null, timeout: r.timeout });
+  }
+  showSteps(1);
+  let res;
+  try { res = await api('submit', id, code, outputs); }
+  catch (e) {
+    if (P) { $('result').innerHTML = `<div class="notice">제출하지 못했어요: ${errText(e)}</div>`; setBusy(false); }
+    return;
+  }
+  const item = (LIST || []).find(x => x.번호 === id);
+  if (item && item.상태 !== '통과') item.상태 = res.passed === res.total ? '통과' : '도전 중';
+  if (GUEST) GUEST_LEFT = res.남은횟수;
+  if (!P || P.번호 !== id) return; // 기다리는 동안 다른 화면으로 이동함
+  P.남은횟수 = res.남은횟수; P.history = res.history; P.submitted = true;
+  $('result').innerHTML = resultHtml(res, !!res.ticket);
+  renderHistory(res.history);
+  $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!res.ticket) return setBusy(false);
+
+  setBusy(true, 'AI 피드백을 만드는 중...');
+  let fb;
+  try { fb = await api('getFeedback', res.ticket); }
+  catch (e) { fb = { feedback: null, 메시지: 'AI 피드백을 받지 못했어요: ' + (e && e.message || e) }; }
+  if (GUEST && fb.남은횟수 != null) GUEST_LEFT = fb.남은횟수;
+  if (!P || P.번호 !== id) return;
+  if (fb.남은횟수 != null) P.남은횟수 = fb.남은횟수;
+  if (fb.history) { P.history = fb.history; renderHistory(fb.history); }
+  $('fbArea').innerHTML = fbAreaHtml(fb.메시지, fb.feedback, false);
+  setBusy(false);
+}
+
+// ---------- 결과·피드백 표시 ----------
+function fbAreaHtml(msg, feedback, waiting) {
+  return (msg ? `<div class="notice">${esc(msg)}</div>` : '')
+    + (waiting ? `<div class="waiting"><span class="spinner"></span> AI가 채점기준에 따라 피드백을 쓰고 있어요. 10~40초쯤 걸려요.</div>` : '')
+    + (feedback ? feedbackHtml(feedback) + (GUEST ? '<div class="muted" style="margin-top:8px">손님 피드백은 저장되지 않아요. 필요하면 지금 메모해 두세요.</div>' : '') : '');
+}
+function resultHtml(r, waiting) {
+  const all = r.passed === r.total;
+  return `<section class="card" style="overflow:hidden">
+    <div class="verdict ${all ? 'ok' : 'bad'}"><span style="font-size:24px">${all ? '🎉' : '🧐'}</span>
+      <div><b>${all ? '모든 테스트를 통과했어요' : '아직 통과하지 못한 테스트가 있어요'}</b>
+      <div style="font-size:13.5px">${r.passed} / ${r.total} 통과</div></div></div>
+    ${testsHtml(r.results)}
+    <div class="fb" id="fbArea">${fbAreaHtml(r.메시지, r.feedback, waiting)}</div>
+  </section>`;
+}
+function testsHtml(results) {
+  const name = (t, i) => `${t.공개 ? '공개' : '숨김'} ${i + 1}`;
+  const fails = results.map((t, i) => [t, i]).filter(([t]) => t.공개 && !t.통과);
+  return `<div class="tests">${results.map((t, i) =>
+      `<span class="tcase ${t.통과 ? 'ok' : 'bad'}">${t.통과 ? '✓' : '✗'} ${name(t, i)}${t.통과 ? '' : ' · ' + esc(t.상황 || '출력 다름')}</span>`).join('')}</div>
+    ${results.some(t => !t.공개 && !t.통과) ? '<div class="muted" style="padding:8px 20px 0">숨김 테스트의 내용은 공개하지 않아요. 어떤 입력에서 틀릴지 스스로 찾아보세요.</div>' : ''}
+    <div class="fails">${fails.map(([t, i]) => `<div class="fail"><b>${name(t, i)}</b> <span class="chip bad">${esc(t.상황 || '출력 다름')}</span>
+      <div class="ex">
+        <div><div class="lab">입력</div><pre class="box">${esc(t.입력)}</pre></div>
+        <div><div class="lab">기대 출력</div><pre class="box">${esc(t.기대출력)}</pre></div>
+        <div><div class="lab">내 출력</div><pre class="box">${esc(t.실제출력 || t.오류)}</pre></div>
+      </div></div>`).join('')}</div>`;
+}
+function feedbackHtml(f) {
+  const list = (cls, title, items) => `<div class="fcard ${cls}"><h4>${title}</h4>
+    ${items && items.length ? `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<span class="muted">없음</span>'}</div>`;
+  return `<div class="cards">
+      ${list('good', '👍 잘한 점', f.잘한점)}
+      ${list('lack', '🔍 부족한 점', f.부족한점)}
+      ${list('more', '🌱 채우면 좋을 부분', f.채우면좋을부분)}
+    </div>
+    <table class="crit"><tr><th style="width:24%">채점기준</th><th style="width:64px">수준</th><th>근거</th></tr>
+      ${(f.기준별평가 || []).map(c => `<tr><td><b>${esc(c.기준)}</b></td><td><span class="chip ${esc(c.수준)}">${esc(c.수준)}</span></td><td>${esc(c.근거)}</td></tr>`).join('')}
+    </table>`;
+}
+function renderHistory(history) {
+  if (!history) { $('history').innerHTML = '<div class="muted"><span class="spinner"></span> 제출 기록을 불러오는 중...</div>'; return; }
+  if (GUEST) { $('history').innerHTML = '<div class="muted">손님은 제출 기록이 저장되지 않아요. 로그인하면 기록이 남고 다시 불러올 수 있어요.</div>'; return; }
+  $('history').innerHTML = history.length ? history.map((h, i) => {
+    const [a, b] = String(h.통과).split('/');
+    return `<details class="hist"><summary><span class="chip ${a === b ? 'ok' : 'bad'}">${esc(h.통과)}</span>
+        <span>${esc(h.시각)}</span>${h.feedback ? '<span class="muted">AI 피드백 있음</span>' : ''}</summary>
+      <div class="inner"><pre class="box">${esc(String(h.코드).replace(/^\n/, ''))}</pre>
+      <button data-i="${i}" class="btn sm load" style="margin-top:8px">이 코드를 편집기로 불러오기</button>
+      ${testsHtml(h.results)}${h.feedback ? `<div class="fb" style="padding:0">${feedbackHtml(h.feedback)}</div>` : ''}</div></details>`;
+  }).join('') : '<div class="muted">아직 제출한 기록이 없어요.</div>';
+  document.querySelectorAll('button.load').forEach(b => b.onclick = () => {
+    editor.setValue(String(history[b.dataset.i].코드).replace(/^\n/, ''));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+$('home').onclick = () => { if (LIST && !busyNow && session.in) showList(); };
+$('loginLink').onclick = () => { session.in = ''; showLogin(); };
+$('logoutBtn').onclick = logout;
+// 관리자가 '학생 화면 보기'로 들어오면 관리자 페이지로 되돌려 보내지 않는다
+if (new URLSearchParams(location.search).has('student')) { try { sessionStorage.setItem('stayStudent', '1'); } catch (e) {} }
+boot();
+</script>
+</body>
+</html>

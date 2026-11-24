@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #f5f6fa; --surface: #fff; --ink: #111827; --ink2: #374151; --muted: #6b7280; --line: #e5e7eb;
+    --brand: #4f46e5; --brand-dark: #4338ca; --brand-soft: #eef2ff;
+    --ok: #047857; --ok-soft: #ecfdf5; --warn: #b45309; --warn-soft: #fffbeb; --warn-line: #fde68a;
+    --bad: #b91c1c; --bad-soft: #fef2f2;
+    --radius: 12px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+    --mono: Consolas, 'D2Coding', 'SF Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Pretendard, 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.55; }
+  h1, h2, h3 { margin: 0; line-height: 1.3; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .top { position: sticky; top: 0; z-index: 10; background: #1e1b4b; color: #fff; height: 56px; padding: 0 24px; display: flex; align-items: center; gap: 14px; }
+  .top b { font-size: 17px; }
+  .top .badge { font-size: 12px; background: rgba(255,255,255,.16); padding: 2px 9px; border-radius: 99px; }
+  .top a { color: #c7d2fe; text-decoration: none; font-size: 13.5px; font-weight: 600; margin-left: auto; }
+  .top .out { background: none; border: 1px solid rgba(255,255,255,.3); color: #e0e7ff; border-radius: 7px; padding: 3px 10px; font-size: 13px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 80px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat { padding: 16px 18px; }
+  .stat .k { font-size: 13px; color: var(--muted); }
+  .stat .v { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  .stat.alert { border-color: var(--warn-line); background: var(--warn-soft); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .tabs button { border: 0; background: none; padding: 10px 16px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button.on { color: var(--brand-dark); border-color: var(--brand); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 14px; }
+  .btn:hover { background: #f9fafb; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.primary:hover { background: var(--brand-dark); }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 13px; }
+  .btn.danger { color: var(--bad); }
+  .bar { display: flex; gap: 8px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .bar .grow { flex: 1; }
+  .bar input[type=search] { height: 36px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; font: inherit; min-width: 200px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid #f0f1f4; font-size: 14px; }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 700; background: #fafafb; white-space: nowrap; }
+  th.sort { cursor: pointer; } th.sort:hover { color: var(--ink); }
+  tr:last-child td { border-bottom: 0; }
+  tr.click { cursor: pointer; } tr.click:hover { background: #fafaff; }
+  .num { font-variant-numeric: tabular-nums; text-align: right; }
+  th.num { text-align: right; }
+  .mono { font-family: var(--mono); }
+  .chip { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 99px; }
+  .chip.승인 { background: var(--ok-soft); color: var(--ok); }
+  .chip.대기 { background: var(--warn-soft); color: var(--warn); }
+  .chip.차단 { background: var(--bad-soft); color: var(--bad); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 6px; background: var(--brand-soft); color: var(--brand-dark); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .empty { padding: 44px; text-align: center; color: var(--muted); }
+  .rate { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+  .rate i { display: block; width: 70px; height: 6px; background: #e5e7eb; border-radius: 99px; overflow: hidden; }
+  .rate i b { display: block; height: 100%; background: var(--brand); }
+  .notice { background: var(--warn-soft); border: 1px solid var(--warn-line); color: #78350f; border-radius: 9px; padding: 10px 14px; margin: 0 0 14px; font-size: 14px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #c7d2fe; border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: -3px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* 문제 상세 패널 */
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100vw); background: var(--surface); border-left: 1px solid var(--line);
+    box-shadow: -8px 0 24px rgba(16,24,40,.12); z-index: 20; padding: 22px 24px; overflow: auto; }
+  .drawer h3 { font-size: 18px; margin-bottom: 4px; }
+  .sec { font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin: 22px 0 8px; }
+  .dist { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; align-items: center; margin: 8px 0; font-size: 14px; }
+  .stack { display: flex; height: 18px; border-radius: 5px; overflow: hidden; background: #e5e7eb; font-size: 11px; color: #fff; font-weight: 700; }
+  .stack span { display: grid; place-items: center; min-width: 0; }
+  .stack .상 { background: #10b981; } .stack .중 { background: #f59e0b; } .stack .하 { background: #ef4444; }
+  .lack { border-top: 1px solid #f0f1f4; padding: 9px 0; font-size: 14px; }
+  .pad { padding: 18px 20px; }
+  .danger-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid #f0f1f4; flex-wrap: wrap; }
+  .btn.danger.solid { background: var(--bad); border-color: var(--bad); color: #fff; }
+  @media (max-width: 800px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<header class="top"><b>🐍 파이썬 저지</b><span class="badge">관리자</span><a id="toStudent" href="./?student">학생 화면 보기 →</a><button class="out" id="logoutBtn" hidden>로그아웃</button></header>
+<main id="main"><div class="empty"><span class="spinner"></span> 불러오는 중...</div></main>
+<div id="drawer"></div>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="https://accounts.google.com/gsi/client" async onload="gisLoaded()"></script>
+<script>
+let D, tab = 'students', sortKey = '번호', sortDir = 1, sq = '', pq = '', busy = false, msg = '';
+const picked = new Set();
+
+async function call(fn, ...args) {
+  busy = true; msg = ''; render();
+  try { D = await api(fn, ...args); } catch (e) { msg = errText(e); }
+  busy = false; render();
+}
+function render() {
+  if (!D) { $('main').innerHTML = msg ? `<div class="notice">${msg}</div>` : '<div class="empty"><span class="spinner"></span> 불러오는 중...</div>'; return; }
+  const wait = D.students.filter(s => s.상태 === '대기').length;
+  const ok = D.students.filter(s => s.상태 === '승인').length;
+  const subs = D.problems.reduce((n, p) => n + p.제출수, 0);
+  $('main').innerHTML = `
+    ${msg ? `<div class="notice">${msg}</div>` : ''}
+    <div class="stats">
+      <div class="card stat ${wait ? 'alert' : ''}"><div class="k">승인 대기</div><div class="v">${wait}</div></div>
+      <div class="card stat"><div class="k">승인된 학생</div><div class="v">${ok}</div></div>
+      <div class="card stat"><div class="k">문제</div><div class="v">${D.problems.length}</div></div>
+      <div class="card stat"><div class="k">전체 제출</div><div class="v">${subs}</div></div>
+    </div>
+    <div class="tabs" role="tablist">${[['students', `학생 ${wait ? `(대기 ${wait})` : ''}`], ['problems', '문제 통계'], ['recent', '최근 제출'], ['settings', '설정']]
+      .map(([k, t]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}
+      <span style="flex:1"></span><button class="btn sm" id="reload" style="align-self:center" ${busy ? 'disabled' : ''}>${busy ? '<span class="spinner"></span>' : '↻'} 새로고침</button></div>
+    <div id="body"></div>`;
+  document.querySelectorAll('.tabs [data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
+  $('reload').onclick = () => call('adminData');
+  ({ students: renderStudents, problems: renderProblems, recent: renderRecent, settings: renderSettings })[tab]();
+}
+
+// ----- 학생 -----
+function renderStudents() {
+  const order = { 대기: 0, 승인: 1, 차단: 2 };
+  const list = D.students.filter(s => !sq || s.학번.includes(sq))
+    .sort((a, b) => order[a.상태] - order[b.상태] || a.학번.localeCompare(b.학번, 'ko', { numeric: true }));
+  const dup = new Set(D.students.map(s => s.학번).filter((v, i, a) => a.indexOf(v) !== i));
+  const waiting = list.filter(s => s.상태 === '대기').map(s => s.학생);
+  [...picked].forEach(id => { if (!list.some(s => s.학생 === id)) picked.delete(id); });
+  $('body').innerHTML = `<div class="card" style="overflow:hidden">
+    <div class="bar">
+      <input type="search" id="sq" placeholder="학번으로 찾기" value="${esc(sq)}" aria-label="학번 검색">
+      <span class="grow"></span>
+      <span class="muted">${picked.size ? picked.size + '명 선택' : ''}</span>
+      <button class="btn" id="okPicked" ${picked.size && !busy ? '' : 'disabled'}>선택 승인</button>
+      <button class="btn danger" id="banPicked" ${picked.size && !busy ? '' : 'disabled'}>선택 차단</button>
+      <button class="btn primary" id="okAll" ${waiting.length && !busy ? '' : 'disabled'}>대기 ${waiting.length}명 모두 승인</button>
+    </div>
+    ${list.length ? `<table>
+      <tr><th style="width:40px"><input type="checkbox" id="all" aria-label="모두 선택" ${list.length && list.every(s => picked.has(s.학생)) ? 'checked' : ''}></th>
+        <th>학번</th><th>상태</th><th>신청 시각</th><th class="num">통과 문제</th><th class="num">제출</th><th>최근 제출</th><th></th></tr>
+      ${list.map(s => `<tr>
+        <td><input type="checkbox" class="pick" data-id="${esc(s.학생)}" ${picked.has(s.학생) ? 'checked' : ''} aria-label="학번 ${esc(s.학번)} 선택"></td>
+        <td class="mono"><b>${esc(s.학번)}</b>${dup.has(s.학번) ? ' <span class="chip 대기" title="같은 학번으로 신청한 계정이 여러 개예요">학번 중복</span>' : ''}</td>
+        <td><span class="chip ${esc(s.상태)}">${esc(s.상태)}</span></td>
+        <td class="muted">${esc(s.신청시각)}</td>
+        <td class="num">${s.통과문제수}</td><td class="num">${s.제출수}</td><td class="muted">${esc(s.최근제출)}</td>
+        <td style="text-align:right;white-space:nowrap">${s.상태 !== '승인' ? `<button class="btn sm set" data-id="${esc(s.학생)}" data-to="승인">승인</button>` : ''}
+          ${s.상태 !== '차단' ? `<button class="btn sm danger set" data-id="${esc(s.학생)}" data-to="차단">차단</button>` : ''}</td></tr>`).join('')}
+    </table>` : `<div class="empty">${D.students.length ? '찾는 학번이 없어요.' : '아직 신청한 학생이 없어요. 학생이 접속해 학번을 입력하면 여기에 나타나요.'}</div>`}
+  </div>`;
+  $('sq').oninput = () => { sq = $('sq').value.trim(); renderStudents(); $('sq').focus(); $('sq').setSelectionRange(sq.length, sq.length); };
+  if ($('all')) $('all').onchange = () => { list.forEach(s => $('all').checked ? picked.add(s.학생) : picked.delete(s.학생)); renderStudents(); };
+  document.querySelectorAll('.pick').forEach(c => c.onchange = () => { c.checked ? picked.add(c.dataset.id) : picked.delete(c.dataset.id); renderStudents(); });
+  const setStatus = (ids, to) => { picked.clear(); call('adminSetStatus', ids, to); };
+  document.querySelectorAll('.set').forEach(b => b.onclick = () => setStatus([b.dataset.id], b.dataset.to));
+  $('okPicked').onclick = () => setStatus([...picked], '승인');
+  $('banPicked').onclick = () => setStatus([...picked], '차단');
+  $('okAll').onclick = () => setStatus(waiting, '승인');
+}
+
+// ----- 문제 통계 -----
+function renderProblems() {
+  const cols = [['번호', '번호'], ['제목', '제목'], ['단원', '단원'], ['시도학생', '시도한 학생'], ['통과학생', '통과한 학생'], ['통과율', '통과율'], ['제출수', '제출 수']];
+  const val = (p, k) => p[k] == null ? -1 : p[k];
+  const list = D.problems.filter(p => !pq || (p.번호 + ' ' + p.제목 + ' ' + p.단원).includes(pq)).sort((a, b) => {
+    const x = val(a, sortKey), y = val(b, sortKey);
+    return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko', { numeric: true })) * sortDir;
+  });
+  $('body').innerHTML = `<div class="card" style="overflow:hidden">
+    <div class="bar"><input type="search" id="pq" placeholder="번호, 제목, 단원으로 찾기" value="${esc(pq)}" aria-label="문제 검색">
+      <span class="grow"></span><span class="muted">문제를 누르면 기준별 평가와 '부족한 점'을 볼 수 있어요. 통과율 = 통과한 학생 ÷ 시도한 학생</span></div>
+    <table><tr>${cols.map(([k, t], i) => `<th class="sort ${i > 2 ? 'num' : ''}" data-k="${k}">${t}${sortKey === k ? (sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr>
+    ${list.map(p => `<tr class="click" data-id="${esc(p.번호)}"><td class="mono">${esc(p.번호)}</td><td><b>${esc(p.제목)}</b></td><td><span class="tag">${esc(p.단원)}</span></td>
+      <td class="num">${p.시도학생}</td><td class="num">${p.통과학생}</td>
+      <td class="num">${p.통과율 == null ? '<span class="muted">-</span>' : `<div class="rate">${p.통과율}%<i><b style="width:${p.통과율}%"></b></i></div>`}</td>
+      <td class="num">${p.제출수}</td></tr>`).join('')}</table></div>`;
+  $('pq').oninput = () => { pq = $('pq').value.trim(); renderProblems(); $('pq').focus(); $('pq').setSelectionRange(pq.length, pq.length); };
+  document.querySelectorAll('th.sort').forEach(th => th.onclick = () => {
+    sortDir = sortKey === th.dataset.k ? -sortDir : 1; sortKey = th.dataset.k; renderProblems();
+  });
+  document.querySelectorAll('tr.click').forEach(tr => tr.onclick = () => openDetail(tr.dataset.id));
+}
+async function openDetail(id) {
+  const p = D.problems.find(x => x.번호 === id);
+  const head = `<div style="display:flex;justify-content:space-between;gap:10px"><div><span class="muted mono">${esc(p.번호)}</span><h3>${esc(p.제목)}</h3></div>
+    <button class="btn sm" id="closeD">닫기 ✕</button></div>`;
+  const close = () => { $('drawer').innerHTML = ''; };
+  $('drawer').innerHTML = `<aside class="drawer">${head}<div class="empty"><span class="spinner"></span> 불러오는 중...</div></aside>`;
+  $('closeD').onclick = close;
+  let d;
+  try { d = await api('adminProblemDetail', id); }
+  catch (e) { $('drawer').innerHTML = `<aside class="drawer">${head}<div class="notice">${errText(e)}</div></aside>`; $('closeD').onclick = close; return; }
+  const names = Object.keys(d.기준);
+  $('drawer').innerHTML = `<aside class="drawer" role="dialog" aria-label="문제 상세">${head}
+    <div class="muted">시도 ${p.시도학생}명 · 통과 ${p.통과학생}명 · 제출 ${p.제출수}건 · AI 피드백 ${d.피드백수}건</div>
+    <div class="sec">기준별 평가 분포 (상 / 중 / 하)</div>
+    ${names.length ? names.map(n => { const c = d.기준[n], t = c.상 + c.중 + c.하 || 1;
+      return `<div class="dist"><div>${esc(n)}</div><div class="stack" title="상 ${c.상} · 중 ${c.중} · 하 ${c.하}">${['상', '중', '하'].map(k =>
+        c[k] ? `<span class="${k}" style="width:${c[k] / t * 100}%">${c[k]}</span>` : '').join('')}</div></div>`; }).join('')
+      : '<div class="muted">아직 AI 피드백이 없어요.</div>'}
+    <div class="sec">최근 '부족한 점' (최대 40개)</div>
+    ${d.부족.length ? d.부족.map(x => `<div class="lack">${esc(x.내용)}<div class="muted">학번 ${esc(x.학번)} · ${esc(x.시각)}</div></div>`).join('')
+      : '<div class="muted">아직 없어요.</div>'}</aside>`;
+  $('closeD').onclick = close;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('drawer').innerHTML = ''; });
+
+// ----- 최근 제출 -----
+function renderRecent() {
+  const title = Object.fromEntries(D.problems.map(p => [p.번호, p.제목]));
+  $('body').innerHTML = `<div class="card" style="overflow:hidden">${D.최근.length ? `<table>
+    <tr><th>시각</th><th>학번</th><th>문제</th><th>통과</th></tr>
+    ${D.최근.map(s => { const [a, b] = String(s.통과).split('/');
+      return `<tr><td class="muted">${esc(s.시각)}</td><td class="mono">${esc(s.학번)}</td>
+        <td><span class="muted mono">${esc(s.문제번호)}</span> ${esc(title[s.문제번호] || '')}</td>
+        <td><span class="chip ${a === b ? '승인' : '차단'}">${esc(s.통과)}</span></td></tr>`; }).join('')}
+    </table>` : '<div class="empty">아직 제출이 없어요.</div>'}</div>`;
+}
+
+// ----- 설정 -----
+function renderSettings() {
+  $('body').innerHTML = `<div class="card pad">
+    <h3>기본 문제 세트</h3>
+    <p class="muted" style="margin:6px 0 14px">기초 파이썬 150문제(입출력, 연산, 조건문, 반복문, 리스트, 문자열, 함수, 딕셔너리, 종합) 중 시트에 아직 없는 문제를 추가해요.<br>
+      이미 있는 번호는 건드리지 않으니, 시트에서 고친 문제는 그대로 남아요.</p>
+    <button class="btn primary" id="add" ${D.추가가능 && !busy ? '' : 'disabled'}>${D.추가가능 ? `문제 ${D.추가가능}개 추가하기` : '모두 추가되어 있어요'}</button>
+    <div class="sec">초기화</div>
+    <div class="danger-row"><div><b>제출 기록 모두 지우기</b><div class="muted">학생들의 제출과 AI 피드백 기록, 풀이 상태가 모두 사라져요. 학생 승인 상태는 그대로예요.</div></div>
+      <span class="confirm" data-kind="제출"></span></div>
+    <div class="danger-row"><div><b>문제를 기본 150문제로 되돌리기</b><div class="muted">문제·테스트 탭을 비우고 기본 150문제만 다시 넣어요. 시트에서 직접 추가하거나 고친 문제도 사라져요.</div></div>
+      <span class="confirm" data-kind="문제"></span></div>
+    <div class="muted" style="margin-top:8px">실수로 지웠다면 구글 시트의 [파일 → 버전 기록]에서 되돌릴 수 있어요.</div>
+    <div class="sec">문제를 직접 추가하거나 고치려면</div>
+    <p class="muted" style="margin:0 0 10px">구글 시트의 <b>문제</b> 탭(번호, 제목, 단원, 설명, 채점기준)과 <b>테스트</b> 탭(문제번호, 공개/숨김, 입력, 기대출력, 설명)을 수정하면 돼요.<br>
+      빠르게 보여 주려고 문제를 5분간 기억해 두기 때문에, 고친 내용은 최대 5분 뒤에 학생 화면에 나타나요.</p>
+    <button class="btn" id="refresh" ${busy ? 'disabled' : ''}>시트에서 고친 내용 지금 반영하기</button>
+    <div class="sec">손님 모드</div>
+    <p class="muted" style="margin:0">로그인하지 않은 사람과 승인 전 학생은 손님으로 풀 수 있어요. 손님의 제출은 저장되지 않아요.<br>
+      손님 전체의 AI 피드백은 하루 <b>${D.손님피드백.한도}회</b>까지이고, 오늘 <b>${D.손님피드백.사용}회</b> 썼어요.
+      한도를 바꾸려면 스크립트 속성 <code>GUEST_LIMIT</code>에 숫자를 적어요. (0이면 손님 AI 피드백 끔)</p>
+    <div class="sec">학생 승인</div>
+    <p class="muted" style="margin:0">학생은 학교 구글 계정으로 접속해 학번을 입력하고 승인을 요청해요. 이름과 이메일은 저장하지 않고, 학번과 계정의 암호화된 식별값만 저장해요.</p>
+  </div>`;
+  $('add').onclick = () => call('adminAddProblems');
+  $('refresh').onclick = () => call('adminRefresh');
+  // 초기화는 두 번 눌러야 실행된다 (브라우저 확인 창 대신 버튼으로 다시 확인).
+  document.querySelectorAll('.confirm').forEach(box => {
+    const ask = () => { box.innerHTML = `<button class="btn danger" ${busy ? 'disabled' : ''}>초기화</button>`; box.firstChild.onclick = sure; };
+    const sure = () => {
+      box.innerHTML = `<span class="muted">정말 지울까요?</span> <button class="btn sm">취소</button> <button class="btn sm danger solid">네, 지워요</button>`;
+      box.children[1].onclick = ask;
+      box.children[2].onclick = () => call('adminReset', box.dataset.kind);
+    };
+    ask();
+  });
+}
+
+// 로그인: 구글 로그인 토큰이 없으면 로그인 버튼부터 보여 준다. 관리자 계정이 아니면 서버가 거절한다.
+function showLogin(error) {
+  D = null;
+  $('logoutBtn').hidden = true;
+  $('main').innerHTML = `<div class="card pad" style="max-width:420px;margin:8vh auto 0;text-align:center">
+    <h3 style="margin-bottom:6px">관리자 로그인</h3>
+    <p class="muted" style="margin:0 0 16px">관리자(교사) Google 계정으로 로그인해 주세요.</p>
+    <div id="gbtn" style="display:flex;justify-content:center;min-height:44px"></div>
+    ${error ? `<div class="notice" style="margin-top:14px">${error}</div>` : ''}</div>`;
+  renderGoogleButton($('gbtn')).then(ok => {
+    if (!ok) $('gbtn').innerHTML = '<div class="notice">config.js의 CLIENT_ID가 비어 있어요. README의 "구글 로그인 설정"을 따라 주세요.</div>';
+  });
+}
+onAuthExpired = e => showLogin(errText(e));
+onSignedIn = start;
+$('logoutBtn').onclick = logout;
+async function start() {
+  if (!Auth.token) return showLogin();
+  $('logoutBtn').hidden = false;
+  busy = true; render();
+  try { D = await api('adminData'); }
+  catch (e) {
+    if (e.code === 'AUTH' || e.code === 'DOMAIN') return; // onAuthExpired가 처리
+    busy = false;
+    $('main').innerHTML = `<div class="card pad" style="max-width:480px;margin:8vh auto 0;text-align:center">
+      <div class="notice">${errText(e)}</div><p><a href="./">학생 화면으로 가기</a> · <button class="btn sm" onclick="logout()">다른 계정으로 로그인</button></p></div>`;
+    return;
+  }
+  busy = false; render();
+}
+start();
+</script>
+</body>
+</html>
