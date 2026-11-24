@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__claude-in-chrome__browser_batch",
+  "tool_input_preview": "{\"actions\":[{\"name\":\"navigate\",\"input\":{\"url\":\"https://cjo1784.github.io/python-judge/\",\"tabId\":575608144}},{\"name\":\"computer\",\"input\":{\"action\":\"wait\",\"duration\":4,\"tabId\":575608144}},{\"name\":\"comput...",
+  "error": "Tab 575608144 is not in Claude's tab group for this session. Tools can only target tabs inside the group. Call tabs_context_mcp to list valid tabs (or create the group with createIfEmpty: true), or tabs_create_mcp to add a tab.",
+  "timestamp": "2026-11-24T04:08:58.466Z",
+  "retry_count": 1
+}
